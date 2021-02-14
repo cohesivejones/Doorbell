@@ -2,9 +2,7 @@
 #include <HTTPClient.h>
 #include "config.h"
 
-String serverName = "http://192.168.86.30:8080/visit";
-unsigned long lastTime = 0;
-unsigned long timerDelay = 5000;
+int buttonState = 0;
 
 void connectToWifi()
 {
@@ -26,35 +24,15 @@ void setup()
   Serial.begin(9600);
   while (!Serial)
     ;
-  connectToWifi();
+
+  pinMode(PIN_4, INPUT_PULLDOWN);
 }
 
 void loop()
 {
-  if ((millis() - lastTime) > timerDelay)
+  buttonState = digitalRead(PIN_4);
+  if (buttonState == HIGH)
   {
-    if (WiFi.status() == WL_CONNECTED)
-    {
-      HTTPClient http;
-
-      http.begin(serverName.c_str());
-      int httpResponseCode = http.GET();
-      if (httpResponseCode > 0)
-      {
-        Serial.print("HTTP Response code: ");
-        Serial.println(httpResponseCode);
-      }
-      else
-      {
-        Serial.print("Error code: ");
-        Serial.println(httpResponseCode);
-      }
-      http.end();
-    }
-    else
-    {
-      Serial.println("WiFi Disconnected");
-    }
-    lastTime = millis();
+    Serial.println("Doorbell ON");
   }
 }
