@@ -2,8 +2,6 @@
 #include <HTTPClient.h>
 #include "config.h"
 
-int buttonState = 0;
-
 void connectToWifi()
 {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
