@@ -15,6 +15,7 @@ void connectToWifi()
 
   Serial.println("Connected, IP address: ");
   Serial.println(WiFi.localIP());
+  WiFi.disconnect();
 }
 
 void GPIO_wake_up()
@@ -24,8 +25,7 @@ void GPIO_wake_up()
   {
     return;
   }
-  Serial.println("Doorbell ON");
-  delay(4000);
+  connectToWifi();
 }
 
 void setup()
