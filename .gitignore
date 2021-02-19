@@ -1,2 +1,4 @@
-# WIFI credentials in config
+# WIFI credentials in config.h
+# #define WIFI_SSID "SSID"
+# #define WIFI_PASSWORD "PASSWORD"
 config.h
