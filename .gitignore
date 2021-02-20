@@ -1,4 +1,9 @@
 # WIFI credentials in config.h
-# #define WIFI_SSID "SSID"
-# #define WIFI_PASSWORD "PASSWORD"
+#define WIFI_SSID "SSID"
+#define WIFI_PASSWORD "PASSWORD"
+#define MQTT_SERVER "YOUR_MQTT_BROKER_IP_ADDRESS"
+#define MQTT_PORT 18846
+#define MQTT_USER "MQTT_USER"
+#define MQTT_PASSWORD "MQTT_PASSWORD"
+
 config.h

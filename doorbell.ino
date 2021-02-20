@@ -1,8 +1,11 @@
+#include <PubSubClient.h>
 #include <WiFi.h>
-#include <HTTPClient.h>
 #include "config.h"
 
-void connectToWifi()
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+void wifiConnect()
 {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
@@ -13,9 +16,36 @@ void connectToWifi()
     Serial.print(".");
   }
 
-  Serial.println("Connected, IP address: ");
+  Serial.print("Connected, IP address: ");
   Serial.println(WiFi.localIP());
-  WiFi.disconnect();
+}
+
+String clientId()
+{
+  String clientId = "ESP32_CLIENT-";
+  clientId += String(random(0xffff), HEX);
+  return clientId;
+}
+
+void mqttConnect()
+{
+  client.setServer(MQTT_SERVER, 18846);
+  while (!client.connected())
+  {
+    Serial.print("Attempting MQTT connection...");
+    if (client.connect(clientId().c_str(), "cloqqihp", "PjRc7g4qV5r9"))
+    {
+      Serial.println("connected");
+      client.publish("doorbell/active", "hello");
+      delay(10000);
+    }
+    else
+    {
+      Serial.print("failed, rc=");
+      Serial.println(client.state());
+      delay(10000);
+    }
+  }
 }
 
 void GPIO_wake_up()
@@ -25,7 +55,9 @@ void GPIO_wake_up()
   {
     return;
   }
-  connectToWifi();
+  wifiConnect();
+  mqttConnect();
+  WiFi.disconnect();
 }
 
 void setup()
