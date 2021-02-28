@@ -29,21 +29,23 @@ String clientId()
 
 void mqttConnect()
 {
-  client.setServer(MQTT_SERVER, 18846);
+  client.setServer(MQTT_SERVER, MQTT_PORT);
   while (!client.connected())
   {
     Serial.print("Attempting MQTT connection...");
-    if (client.connect(clientId().c_str(), "cloqqihp", "PjRc7g4qV5r9"))
+    if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD))
     {
       Serial.println("connected");
-      client.publish("doorbell/active", "hello");
-      delay(10000);
+      client.publish("doorbell/active", "");
+      delay(30000);
+      client.publish("doorbell/inactive", "");
+      return;
     }
     else
     {
       Serial.print("failed, rc=");
       Serial.println(client.state());
-      delay(10000);
+      delay(1000);
     }
   }
 }
@@ -57,6 +59,7 @@ void GPIO_wake_up()
   }
   wifiConnect();
   mqttConnect();
+  client.disconnect();
   WiFi.disconnect();
 }
 
