@@ -27,7 +27,7 @@ String clientId()
   return clientId;
 }
 
-void mqttConnect()
+void mqttSendActive()
 {
   client.setServer(MQTT_SERVER, MQTT_PORT);
   while (!client.connected())
@@ -36,9 +36,26 @@ void mqttConnect()
     if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD))
     {
       Serial.println("connected");
-      client.publish("doorbell/active", "");
-      delay(30000);
-      client.publish("doorbell/inactive", "");
+      client.publish("doorbell/active", "test");
+      return;
+    }
+    else
+    {
+      Serial.print("failed, rc=");
+      Serial.println(client.state());
+      delay(1000);
+    }
+  }
+}
+
+void mqttSendInactive()
+{
+  client.setServer(MQTT_SERVER, MQTT_PORT);
+  while (!client.connected())
+  {
+    if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD))
+    {
+      client.publish("doorbell/inactive", "test");
       return;
     }
     else
@@ -58,7 +75,9 @@ void GPIO_wake_up()
     return;
   }
   wifiConnect();
-  mqttConnect();
+  mqttSendActive();
+  delay(30000);
+  mqttSendInactive();
   client.disconnect();
   WiFi.disconnect();
 }
