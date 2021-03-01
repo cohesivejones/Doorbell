@@ -55,23 +55,29 @@ void mqttConnect()
 
 void mqttSendActive()
 {
+  Serial.println("Send Active");
   mqttConnect();
   client.publish(ACTIVE, "test");
-  client.subscribe(BUZZER);
   time_now = millis();
+  client.subscribe(BUZZER);
   while (millis() < time_now + THIRTY_SECONDS)
   {
+    client.loop();
   }
 }
 
 void mqttSendInactive()
 {
-  mqttConnect();
-  client.publish(INACTIVE, "test");
+  Serial.println("Send Inactive");
+  while (!client.publish(INACTIVE, "test"))
+  {
+    mqttConnect();
+  }
 }
 
 void callback(char *topic, byte *payload, unsigned int length)
 {
+  Serial.println("Recieved Buzzer");
   digitalWrite(GPIO_NUM_13, HIGH);
   delay(1000);
   digitalWrite(GPIO_NUM_13, LOW);
@@ -79,6 +85,8 @@ void callback(char *topic, byte *payload, unsigned int length)
 
 void GPIO_wake_up()
 {
+  pinMode(GPIO_NUM_13, OUTPUT);
+  digitalWrite(GPIO_NUM_13, LOW);
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
   if (wakeup_reason != ESP_SLEEP_WAKEUP_EXT0)
   {
