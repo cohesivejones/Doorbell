@@ -5,6 +5,13 @@
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+const char *INACTIVE = "doorbell/inactive";
+const char *ACTIVE = "doorbell/active";
+const char *BUZZER = "doorbell/buzzer";
+
+int THIRTY_SECONDS = 30000;
+unsigned long time_now = 0;
+
 void wifiConnect()
 {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -27,16 +34,14 @@ String clientId()
   return clientId;
 }
 
-void mqttSendActive()
+void mqttConnect()
 {
-  client.setServer(MQTT_SERVER, MQTT_PORT);
   while (!client.connected())
   {
     Serial.print("Attempting MQTT connection...");
     if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD))
     {
       Serial.println("connected");
-      client.publish("doorbell/active", "test");
       return;
     }
     else
@@ -48,23 +53,28 @@ void mqttSendActive()
   }
 }
 
+void mqttSendActive()
+{
+  mqttConnect();
+  client.publish(ACTIVE, "test");
+  client.subscribe(BUZZER);
+  time_now = millis();
+  while (millis() < time_now + THIRTY_SECONDS)
+  {
+  }
+}
+
 void mqttSendInactive()
 {
-  client.setServer(MQTT_SERVER, MQTT_PORT);
-  while (!client.connected())
-  {
-    if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD))
-    {
-      client.publish("doorbell/inactive", "test");
-      return;
-    }
-    else
-    {
-      Serial.print("failed, rc=");
-      Serial.println(client.state());
-      delay(1000);
-    }
-  }
+  mqttConnect();
+  client.publish(INACTIVE, "test");
+}
+
+void callback(char *topic, byte *payload, unsigned int length)
+{
+  digitalWrite(GPIO_NUM_13, HIGH);
+  delay(1000);
+  digitalWrite(GPIO_NUM_13, LOW);
 }
 
 void GPIO_wake_up()
@@ -76,7 +86,6 @@ void GPIO_wake_up()
   }
   wifiConnect();
   mqttSendActive();
-  delay(30000);
   mqttSendInactive();
   client.disconnect();
   WiFi.disconnect();
@@ -88,6 +97,8 @@ void setup()
   while (!Serial)
     ;
 
+  client.setServer(MQTT_SERVER, MQTT_PORT);
+  client.setCallback(callback);
   GPIO_wake_up();
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, HIGH);
   Serial.println("Going to sleep...");
