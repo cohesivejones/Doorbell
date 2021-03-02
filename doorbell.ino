@@ -64,14 +64,9 @@ void mqttSendActive()
   {
     client.loop();
   }
-}
-
-void mqttSendInactive()
-{
-  Serial.println("Send Inactive");
-  while (!client.publish(INACTIVE, "test"))
+  if (client.publish(INACTIVE, "test"))
   {
-    mqttConnect();
+    Serial.println("Send Inactive");
   }
 }
 
@@ -79,14 +74,10 @@ void callback(char *topic, byte *payload, unsigned int length)
 {
   Serial.println("Recieved Buzzer");
   digitalWrite(GPIO_NUM_13, HIGH);
-  delay(1000);
-  digitalWrite(GPIO_NUM_13, LOW);
 }
 
 void GPIO_wake_up()
 {
-  pinMode(GPIO_NUM_13, OUTPUT);
-  digitalWrite(GPIO_NUM_13, LOW);
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
   if (wakeup_reason != ESP_SLEEP_WAKEUP_EXT0)
   {
@@ -94,7 +85,6 @@ void GPIO_wake_up()
   }
   wifiConnect();
   mqttSendActive();
-  mqttSendInactive();
   client.disconnect();
   WiFi.disconnect();
 }
@@ -105,6 +95,8 @@ void setup()
   while (!Serial)
     ;
 
+  pinMode(GPIO_NUM_13, OUTPUT);
+  digitalWrite(GPIO_NUM_13, LOW);
   client.setServer(MQTT_SERVER, MQTT_PORT);
   client.setCallback(callback);
   GPIO_wake_up();
