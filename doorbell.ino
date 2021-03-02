@@ -74,6 +74,8 @@ void callback(char *topic, byte *payload, unsigned int length)
 {
   Serial.println("Recieved Buzzer");
   digitalWrite(GPIO_NUM_13, HIGH);
+  delay(2000);
+  digitalWrite(GPIO_NUM_13, LOW);
 }
 
 void GPIO_wake_up()
