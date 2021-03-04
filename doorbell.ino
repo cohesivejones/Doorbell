@@ -55,19 +55,27 @@ void mqttConnect()
 
 void mqttSendActive()
 {
-  Serial.println("Send Active");
   mqttConnect();
+
+  Serial.println("Send Active");
   client.publish(ACTIVE, "test");
+
+  Serial.println("Wait for Buzzer");
   time_now = millis();
   client.subscribe(BUZZER);
   while (millis() < time_now + THIRTY_SECONDS)
   {
     client.loop();
   }
-  if (client.publish(INACTIVE, "test"))
+
+  Serial.println("Send Inactive");
+  while (!client.publish(INACTIVE, "test"))
   {
-    Serial.println("Send Inactive");
+    mqttConnect();
   }
+
+  Serial.println("Disconnect MQTT");
+  client.disconnect();
 }
 
 void callback(char *topic, byte *payload, unsigned int length)
@@ -87,7 +95,6 @@ void GPIO_wake_up()
   }
   wifiConnect();
   mqttSendActive();
-  client.disconnect();
   WiFi.disconnect();
 }
 
