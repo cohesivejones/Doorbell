@@ -34,8 +34,18 @@ String clientId()
   return clientId;
 }
 
+void callback(char *topic, byte *payload, unsigned int length)
+{
+  Serial.println("Recieved Buzzer");
+  digitalWrite(GPIO_NUM_13, HIGH);
+  delay(2000);
+  digitalWrite(GPIO_NUM_13, LOW);
+}
+
 void mqttConnect()
 {
+  client.setServer(MQTT_SERVER, MQTT_PORT);
+  client.setCallback(callback);
   while (!client.connected())
   {
     Serial.print("Attempting MQTT connection...");
@@ -78,14 +88,6 @@ void mqttSendActive()
   client.disconnect();
 }
 
-void callback(char *topic, byte *payload, unsigned int length)
-{
-  Serial.println("Recieved Buzzer");
-  digitalWrite(GPIO_NUM_13, HIGH);
-  delay(2000);
-  digitalWrite(GPIO_NUM_13, LOW);
-}
-
 void GPIO_wake_up()
 {
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
@@ -106,8 +108,6 @@ void setup()
 
   pinMode(GPIO_NUM_13, OUTPUT);
   digitalWrite(GPIO_NUM_13, LOW);
-  client.setServer(MQTT_SERVER, MQTT_PORT);
-  client.setCallback(callback);
   GPIO_wake_up();
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, HIGH);
   Serial.println("Going to sleep...");
