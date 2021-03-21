@@ -8,23 +8,32 @@ PubSubClient client(espClient);
 const char *INACTIVE = "doorbell/inactive";
 const char *ACTIVE = "doorbell/active";
 const char *BUZZER = "doorbell/buzzer";
+const char *BATTERY = "doorbell/battery";
 
+const float PIN_RESOLUTION = 4095.0;
+const float VOLTAGE_DIVIDED = 2.0;
+const float VOLTAGE_LOW = 3.67;
+const float VOLTAGE_HIGH = 4.20;
+const float VOLTAGE_GRADIENT = (100.0 / (VOLTAGE_HIGH - VOLTAGE_LOW));
 int THIRTY_SECONDS = 30000;
+int TWO_SECONDS = 2000;
 unsigned long time_now = 0;
 
 void wifiConnect()
 {
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-  Serial.println("Connecting");
-  while (WiFi.status() != WL_CONNECTED)
+  if (WiFi.status() != WL_CONNECTED)
   {
-    delay(500);
-    Serial.print(".");
-  }
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    Serial.println("Connecting");
+    while (WiFi.status() != WL_CONNECTED)
+    {
+      delay(500);
+      Serial.print(".");
+    }
 
-  Serial.print("Connected, IP address: ");
-  Serial.println(WiFi.localIP());
+    Serial.print("Connected, IP address: ");
+    Serial.println(WiFi.localIP());
+  }
 }
 
 String clientId()
@@ -38,7 +47,10 @@ void callback(char *topic, byte *payload, unsigned int length)
 {
   Serial.println("Recieved Buzzer");
   digitalWrite(GPIO_NUM_13, HIGH);
-  delay(2000);
+  time_now = millis();
+  while (millis() < time_now + TWO_SECONDS)
+  {
+  }
   digitalWrite(GPIO_NUM_13, LOW);
 }
 
@@ -49,7 +61,7 @@ void mqttConnect()
   while (!client.connected())
   {
     Serial.print("Attempting MQTT connection...");
-    if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD))
+    if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD, INACTIVE, 1, 0, "Ungracefull disconect"))
     {
       Serial.println("connected");
       return;
@@ -63,12 +75,22 @@ void mqttConnect()
   }
 }
 
-void mqttSendActive()
+float voltage()
+{
+  float vIn = analogRead(A13) / PIN_RESOLUTION;
+  float voltage = (vIn * VOLTAGE_DIVIDED * 3.3 * 1.1);
+  return (voltage - VOLTAGE_LOW) * VOLTAGE_GRADIENT;
+}
+
+void mqttSend()
 {
   mqttConnect();
 
   Serial.println("Send Active");
   client.publish(ACTIVE, "test");
+
+  Serial.println("Send Battery status");
+  client.publish(BATTERY, String(voltage()).c_str());
 
   Serial.println("Wait for Buzzer");
   time_now = millis();
@@ -79,9 +101,11 @@ void mqttSendActive()
   }
 
   Serial.println("Send Inactive");
-  while (!client.publish(INACTIVE, "test"))
+  client.publish(INACTIVE, "test");
+  time_now = millis();
+  while (millis() < time_now + TWO_SECONDS)
   {
-    mqttConnect();
+    client.loop();
   }
 
   Serial.println("Disconnect MQTT");
@@ -96,7 +120,7 @@ void GPIO_wake_up()
     return;
   }
   wifiConnect();
-  mqttSendActive();
+  mqttSend();
   WiFi.disconnect();
 }
 
