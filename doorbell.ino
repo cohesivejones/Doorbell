@@ -61,7 +61,7 @@ void mqttConnect()
   while (!client.connected())
   {
     Serial.print("Attempting MQTT connection...");
-    if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD, INACTIVE, 1, 0, "Ungracefull disconect"))
+    if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD))
     {
       Serial.println("connected");
       return;
