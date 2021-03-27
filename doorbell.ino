@@ -89,15 +89,22 @@ float voltage()
   return (voltage - VOLTAGE_LOW) * VOLTAGE_GRADIENT;
 }
 
-void mqttSend()
+void mqttSendBatteryStatus() {
+  wifiConnect();
+  mqttConnect();
+  Serial.println("Send Battery status");
+  client.publish(BATTERY, String(voltage()).c_str());
+  Serial.println("Disconnect MQTT");
+  client.disconnect();
+}
+
+void mqttSendActiveStatus()
 {
+  wifiConnect();
   mqttConnect();
 
   Serial.println("Send Active");
   client.publish(ACTIVE, EMPTY_MESSAGE);
-
-  Serial.println("Send Battery status");
-  client.publish(BATTERY, String(voltage()).c_str());
 
   Serial.println("Wait for Buzzer");
   client.subscribe(BUZZER);
@@ -142,9 +149,10 @@ void configureWakeUp()
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
   switch(wakeup_reason) {
     case ESP_SLEEP_WAKEUP_EXT0 :
+      mqttSendActiveStatus();
+      break;
     case ESP_SLEEP_WAKEUP_TIMER :
-      wifiConnect();
-      mqttSend();
+      mqttSendBatteryStatus();
       break;
     default :
       break;
