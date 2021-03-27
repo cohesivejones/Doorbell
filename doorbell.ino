@@ -20,7 +20,8 @@ int THIRTY_SECONDS = 30000;
 int TWO_SECONDS = 2000;
 
 // How many minutes the ESP should sleep
-#define DEEP_SLEEP_TIME 60
+#define DEEP_SLEEP_TIME 30
+#define uS_TO_M_FACTOR 60000000ULL
 
 unsigned long time_now = 0;
 
@@ -123,10 +124,13 @@ void goToDeepSleep()
   WiFi.disconnect();
   WiFi.mode(WIFI_OFF);
 
-
   // Configure the timer to wake us up!
-  esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME * 60 * 1000000);
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, HIGH);
+  if(ESP_OK!=esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME * uS_TO_M_FACTOR)) {
+    Serial.println("Error: failed to set timer wakeup");
+  }
+  if(ESP_OK!=esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, HIGH)) {
+    Serial.println("Error: failed to set ext wakeup");
+  }
 
   // Go to sleep! Zzzz
   esp_deep_sleep_start();
