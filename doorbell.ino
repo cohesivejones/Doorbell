@@ -1,5 +1,6 @@
 #include <PubSubClient.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 #include "config.h"
 
 WiFiClient espClient;
@@ -119,6 +120,9 @@ void mqttSend()
 void goToDeepSleep()
 {
   Serial.println("Going to sleep...");
+  WiFi.disconnect();
+  WiFi.mode(WIFI_OFF);
+
 
   // Configure the timer to wake us up!
   esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME * 60 * 1000000);
@@ -137,7 +141,6 @@ void configureWakeUp()
   }
   wifiConnect();
   mqttSend();
-  WiFi.disconnect();
 }
 
 void setup()
