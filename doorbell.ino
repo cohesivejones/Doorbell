@@ -21,7 +21,7 @@ int THIRTY_SECONDS = 30000;
 int TWO_SECONDS = 2000;
 
 // How many minutes the ESP should sleep
-#define DEEP_SLEEP_TIME 30
+#define DEEP_SLEEP_TIME 15
 #define uS_TO_M_FACTOR 60000000ULL
 
 unsigned long timeNow = 0;
@@ -140,12 +140,15 @@ void goToDeepSleep()
 void configureWakeUp()
 {
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-  if (!(wakeup_reason == ESP_SLEEP_WAKEUP_EXT0 || wakeup_reason == ESP_SLEEP_WAKEUP_TIMER))
-  {
-    return;
+  switch(wakeup_reason) {
+    case ESP_SLEEP_WAKEUP_EXT0 :
+    case ESP_SLEEP_WAKEUP_TIMER :
+      wifiConnect();
+      mqttSend();
+      break;
+    default :
+      break;
   }
-  wifiConnect();
-  mqttSend();
 }
 
 void setup()
