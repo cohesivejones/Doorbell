@@ -10,6 +10,7 @@ const char *INACTIVE = "doorbell/inactive";
 const char *ACTIVE = "doorbell/active";
 const char *BUZZER = "doorbell/buzzer";
 const char *BATTERY = "doorbell/battery";
+const char *EMPTY_MESSAGE = "test";
 
 const float PIN_RESOLUTION = 4095.0;
 const float VOLTAGE_DIVIDED = 2.0;
@@ -23,7 +24,7 @@ int TWO_SECONDS = 2000;
 #define DEEP_SLEEP_TIME 30
 #define uS_TO_M_FACTOR 60000000ULL
 
-unsigned long time_now = 0;
+unsigned long timeNow = 0;
 
 void wifiConnect()
 {
@@ -53,8 +54,8 @@ void callback(char *topic, byte *payload, unsigned int length)
 {
   Serial.println("Recieved Buzzer");
   digitalWrite(GPIO_NUM_13, HIGH);
-  time_now = millis();
-  while (millis() < time_now + TWO_SECONDS)
+  timeNow = millis();
+  while (millis() < timeNow + TWO_SECONDS)
   {
   }
   digitalWrite(GPIO_NUM_13, LOW);
@@ -93,23 +94,23 @@ void mqttSend()
   mqttConnect();
 
   Serial.println("Send Active");
-  client.publish(ACTIVE, "test");
+  client.publish(ACTIVE, EMPTY_MESSAGE);
 
   Serial.println("Send Battery status");
   client.publish(BATTERY, String(voltage()).c_str());
 
   Serial.println("Wait for Buzzer");
-  time_now = millis();
   client.subscribe(BUZZER);
-  while (millis() < time_now + THIRTY_SECONDS)
+  timeNow = millis();
+  while (millis() < timeNow + THIRTY_SECONDS)
   {
     client.loop();
   }
 
   Serial.println("Send Inactive");
-  client.publish(INACTIVE, "test");
-  time_now = millis();
-  while (millis() < time_now + TWO_SECONDS)
+  client.publish(INACTIVE, EMPTY_MESSAGE);
+  timeNow = millis();
+  while (millis() < timeNow + TWO_SECONDS)
   {
     client.loop();
   }
