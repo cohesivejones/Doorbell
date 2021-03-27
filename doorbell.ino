@@ -17,6 +17,10 @@ const float VOLTAGE_HIGH = 4.20;
 const float VOLTAGE_GRADIENT = (100.0 / (VOLTAGE_HIGH - VOLTAGE_LOW));
 int THIRTY_SECONDS = 30000;
 int TWO_SECONDS = 2000;
+
+// How many minutes the ESP should sleep
+#define DEEP_SLEEP_TIME 60
+
 unsigned long time_now = 0;
 
 void wifiConnect()
@@ -112,10 +116,22 @@ void mqttSend()
   client.disconnect();
 }
 
-void GPIO_wake_up()
+void goToDeepSleep()
+{
+  Serial.println("Going to sleep...");
+
+  // Configure the timer to wake us up!
+  esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME * 60 * 1000000);
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, HIGH);
+
+  // Go to sleep! Zzzz
+  esp_deep_sleep_start();
+}
+
+void configureWakeUp()
 {
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-  if (wakeup_reason != ESP_SLEEP_WAKEUP_EXT0)
+  if (!(wakeup_reason == ESP_SLEEP_WAKEUP_EXT0 || wakeup_reason == ESP_SLEEP_WAKEUP_TIMER))
   {
     return;
   }
@@ -130,12 +146,13 @@ void setup()
   while (!Serial)
     ;
 
+  // Set buzzer voltage low
   pinMode(GPIO_NUM_13, OUTPUT);
   digitalWrite(GPIO_NUM_13, LOW);
-  GPIO_wake_up();
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, HIGH);
-  Serial.println("Going to sleep...");
-  esp_deep_sleep_start();
+
+  configureWakeUp();
+
+  goToDeepSleep();
 }
 
 void loop()
