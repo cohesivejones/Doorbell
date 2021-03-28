@@ -17,12 +17,10 @@ const float VOLTAGE_DIVIDED = 2.0;
 const float VOLTAGE_LOW = 3.67;
 const float VOLTAGE_HIGH = 4.20;
 const float VOLTAGE_GRADIENT = (100.0 / (VOLTAGE_HIGH - VOLTAGE_LOW));
-int THIRTY_SECONDS = 30000;
-int TWO_SECONDS = 2000;
+const int THIRTY_SECONDS = 30000;
+const int TWO_SECONDS = 2000;
 
-// How many minutes the ESP should sleep
-#define DEEP_SLEEP_TIME 15
-#define uS_TO_M_FACTOR 60000000ULL
+const unsigned long DEEP_SLEEP_TIME = 15L;
 
 unsigned long timeNow = 0;
 
@@ -133,7 +131,7 @@ void goToDeepSleep()
   WiFi.mode(WIFI_OFF);
 
   // Configure the timer to wake us up!
-  if(ESP_OK!=esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME * uS_TO_M_FACTOR)) {
+  if(ESP_OK!=esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME * 60L * 1000000L)) {
     Serial.println("Error: failed to set timer wakeup");
   }
   if(ESP_OK!=esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, HIGH)) {
