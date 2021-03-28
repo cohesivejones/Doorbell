@@ -19,6 +19,7 @@ const float VOLTAGE_HIGH = 4.20;
 const float VOLTAGE_GRADIENT = (100.0 / (VOLTAGE_HIGH - VOLTAGE_LOW));
 const int THIRTY_SECONDS = 30000;
 const int TWO_SECONDS = 2000;
+const int MAX_RETRIES = 3;
 
 const unsigned long DEEP_SLEEP_TIME = 15L;
 
@@ -60,25 +61,27 @@ void callback(char *topic, byte *payload, unsigned int length)
   digitalWrite(GPIO_NUM_13, LOW);
 }
 
-void mqttConnect()
+bool mqttConnect()
 {
-  client.setServer(MQTT_SERVER, MQTT_PORT);
-  client.setCallback(callback);
-  while (!client.connected())
+  int tries = 0;
+  client.setServer(MQTT_SERVER, MQTT_PORT)
+    .setCallback(callback);
+  Serial.print("Attempting MQTT connection...");
+  while (!client.connected() && tries < MAX_RETRIES)
   {
-    Serial.print("Attempting MQTT connection...");
     if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD))
     {
       Serial.println("connected");
-      return;
     }
     else
     {
       Serial.print("failed, rc=");
       Serial.println(client.state());
-      delay(1000);
+      delay(500);
+      tries++;
     }
   }
+  return client.connected();
 }
 
 float voltage()
@@ -89,8 +92,7 @@ float voltage()
 }
 
 void mqttSendBatteryStatus() {
-  if (wifiConnect()) {
-    mqttConnect();
+  if (wifiConnect() && mqttConnect()) {
     Serial.println("Send Battery status");
     client.publish(BATTERY, String(voltage()).c_str());
     Serial.println("Disconnect MQTT");
@@ -100,30 +102,29 @@ void mqttSendBatteryStatus() {
 
 void mqttSendActiveStatus()
 {
-  wifiConnect();
-  mqttConnect();
+  if (wifiConnect() && mqttConnect()) {
+    Serial.println("Send Active");
+    client.publish(ACTIVE, EMPTY_MESSAGE);
 
-  Serial.println("Send Active");
-  client.publish(ACTIVE, EMPTY_MESSAGE);
+    Serial.println("Wait for Buzzer");
+    client.subscribe(BUZZER);
+    timeNow = millis();
+    while (millis() < timeNow + THIRTY_SECONDS)
+    {
+      client.loop();
+    }
 
-  Serial.println("Wait for Buzzer");
-  client.subscribe(BUZZER);
-  timeNow = millis();
-  while (millis() < timeNow + THIRTY_SECONDS)
-  {
-    client.loop();
+    Serial.println("Send Inactive");
+    client.publish(INACTIVE, EMPTY_MESSAGE);
+    timeNow = millis();
+    while (millis() < timeNow + TWO_SECONDS)
+    {
+      client.loop();
+    }
+
+    Serial.println("Disconnect MQTT");
+    client.disconnect();
   }
-
-  Serial.println("Send Inactive");
-  client.publish(INACTIVE, EMPTY_MESSAGE);
-  timeNow = millis();
-  while (millis() < timeNow + TWO_SECONDS)
-  {
-    client.loop();
-  }
-
-  Serial.println("Disconnect MQTT");
-  client.disconnect();
 }
 
 void goToDeepSleep()
