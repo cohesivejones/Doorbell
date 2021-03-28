@@ -24,7 +24,7 @@ const unsigned long DEEP_SLEEP_TIME = 15L;
 
 unsigned long timeNow = 0;
 
-void wifiConnect()
+bool wifiConnect()
 {
   if (WiFi.status() != WL_CONNECTED)
   {
@@ -39,6 +39,7 @@ void wifiConnect()
     Serial.print("Connected, IP address: ");
     Serial.println(WiFi.localIP());
   }
+  return (WiFi.status() == WL_CONNECTED);
 }
 
 String clientId()
@@ -88,12 +89,13 @@ float voltage()
 }
 
 void mqttSendBatteryStatus() {
-  wifiConnect();
-  mqttConnect();
-  Serial.println("Send Battery status");
-  client.publish(BATTERY, String(voltage()).c_str());
-  Serial.println("Disconnect MQTT");
-  client.disconnect();
+  if (wifiConnect()) {
+    mqttConnect();
+    Serial.println("Send Battery status");
+    client.publish(BATTERY, String(voltage()).c_str());
+    Serial.println("Disconnect MQTT");
+    client.disconnect();
+  }
 }
 
 void mqttSendActiveStatus()
