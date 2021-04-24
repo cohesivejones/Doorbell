@@ -17,6 +17,7 @@ BLEAdvertisedDevice *device;
 BLEClient *pClient;
 WiFiClient espClient;
 PubSubClient client(espClient);
+BLEScan *pBLEScan;
 
 bool wifiConnect()
 {
@@ -81,9 +82,6 @@ class MyClientCallback : public BLEClientCallbacks
 
   void onDisconnect(BLEClient *pclient)
   {
-    client.publish(DOORBELL_INACTIVE, EMPTY_MESSAGE);
-    client.unsubscribe(DOORBELL_BUZZER);
-    delete device;
   }
 };
 
@@ -93,16 +91,17 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks
   {
     if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceUUID))
     {
-      BLEDevice::getScan()->stop();
       device = new BLEAdvertisedDevice(advertisedDevice);
+      pBLEScan->stop();
     }
   }
 };
 
-void Scan()
+void StartScan()
 {
+  Serial.println("Scanning...");
   BLEDevice::init("");
-  BLEScan *pBLEScan = BLEDevice::getScan();
+  pBLEScan = BLEDevice::getScan();
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
   pBLEScan->setInterval(1349);
   pBLEScan->setWindow(449);
@@ -121,29 +120,46 @@ void setup()
 
   wifiConnect();
   mqttConnect();
-  Scan();
+  client.publish(DOORBELL_INACTIVE, EMPTY_MESSAGE);
+  StartScan();
 }
 
 void loop()
 {
-  if (device)
+  try
   {
-    if (!pClient)
+    if (device && pClient)
     {
-      Serial.print("Device found: ");
-      Serial.println(device->getName().c_str());
+      if (!pClient->isConnected())
+      {
+        Serial.println("Device disconnected -- Restarting");
+        ESP.restart();
+      }
+      Serial.println("Device connected");
+      client.loop();
+      return;
+    }
+    if (device)
+    {
+      Serial.println("Device found -- Connecting");
       pClient = BLEDevice::createClient();
       pClient->setClientCallbacks(new MyClientCallback());
       pClient->connect(device);
       BLERemoteService *pRemoteService = pClient->getService(serviceUUID);
       BLERemoteCharacteristic *pRemoteCharacteristic = pRemoteService->getCharacteristic(buzzerUUID);
       notify_callback cb = [](BLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
-        client.publish(DOORBELL_ACTIVE, EMPTY_MESSAGE);
-        delay(3000);
+        Serial.println("Doorbell button pressed");
       };
       pRemoteCharacteristic->registerForNotify(cb);
       client.subscribe(DOORBELL_BUZZER);
+      client.publish(DOORBELL_ACTIVE, EMPTY_MESSAGE);
+      return;
     }
+    Serial.println("Device not found -- Restarting");
+    ESP.restart();
   }
-  client.loop();
+  catch (int e)
+  {
+    ESP.restart();
+  }
 }
