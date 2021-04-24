@@ -13,24 +13,27 @@ static BLEUUID buzzerUUID("00001524-1212-EFDE-1523-785FEABCD123");
 static BLEUUID openDoorUUID("00001525-1212-EFDE-1523-785FEABCD123");
 
 BLEAdvertisedDevice *device;
-
 BLEClient *pClient;
 WiFiClient espClient;
 PubSubClient client(espClient);
 BLEScan *pBLEScan;
+
+const int MAX_RETIES = 5;
+int attempts = 0;
 
 bool wifiConnect()
 {
   if (WiFi.status() != WL_CONNECTED)
   {
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    Serial.println("Attempting WiFi connection");
-    while (WiFi.status() != WL_CONNECTED)
+    Serial.print("WiFi -- attempting connection");
+    while (WiFi.status() != WL_CONNECTED && attempts < MAX_RETIES)
     {
       delay(500);
       Serial.print(".");
+      attempts++;
     }
-    Serial.print("Connected, IP address: ");
+    Serial.print("connected, IP address: ");
     Serial.println(WiFi.localIP());
   }
   return (WiFi.status() == WL_CONNECTED);
@@ -55,10 +58,11 @@ void callback(char *topic, byte *payload, unsigned int length)
 
 bool mqttConnect()
 {
-  while (!client.connected())
+  attempts = 0;
+  while (!client.connected() && attempts < MAX_RETIES)
   {
     client.setServer(MQTT_SERVER, MQTT_PORT).setCallback(callback);
-    Serial.print("Attempting MQTT connection...");
+    Serial.print("MQTT Server -- attempting connection...");
     if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD))
     {
       Serial.println("Connected");
@@ -68,6 +72,7 @@ bool mqttConnect()
     {
       Serial.print("failed, rc=");
       Serial.println(client.state());
+      attempts++;
       delay(500);
     }
   }
@@ -99,7 +104,7 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks
 
 void StartScan()
 {
-  Serial.println("Scanning...");
+  Serial.println("BLE -- Scanning...");
   BLEDevice::init("");
   pBLEScan = BLEDevice::getScan();
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
@@ -118,10 +123,16 @@ void setup()
   Serial.println("Doorbel Client");
   Serial.println("------------------------------\n");
 
-  wifiConnect();
-  mqttConnect();
-  client.publish(DOORBELL_INACTIVE, EMPTY_MESSAGE);
-  StartScan();
+  if (wifiConnect() && mqttConnect())
+  {
+    client.publish(DOORBELL_INACTIVE, EMPTY_MESSAGE);
+    StartScan();
+  }
+  else
+  {
+    Serial.println("MQTT Server -- failed to connect");
+    ESP.restart();
+  }
 }
 
 void loop()
