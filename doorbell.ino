@@ -149,6 +149,7 @@ void loop()
       BLERemoteCharacteristic *pRemoteCharacteristic = pRemoteService->getCharacteristic(buzzerUUID);
       notify_callback cb = [](BLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
         Serial.println("Doorbell button pressed");
+        client.publish(DOORBELL_PRESSED, EMPTY_MESSAGE);
       };
       pRemoteCharacteristic->registerForNotify(cb);
       client.subscribe(DOORBELL_BUZZER);
