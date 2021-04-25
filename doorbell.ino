@@ -5,11 +5,11 @@
 #include "config.h"
 
 /* Doorbell Service: 00001523-1212-EFDE-1523-785FEABCD123
- * Buzzer : 00001524-1212-EFDE-1523-785FEABCD123
+ * outsideButton : 00001524-1212-EFDE-1523-785FEABCD123
  * openDoor : 00001525-1212-EFDE-1523-785FEABCD123
  */
 static BLEUUID serviceUUID("00001523-1212-EFDE-1523-785FEABCD123");
-static BLEUUID buzzerUUID("00001524-1212-EFDE-1523-785FEABCD123");
+static BLEUUID outsideButtonUUID("00001524-1212-EFDE-1523-785FEABCD123");
 static BLEUUID openDoorUUID("00001525-1212-EFDE-1523-785FEABCD123");
 
 BLEAdvertisedDevice *device;
@@ -157,13 +157,13 @@ void loop()
       pClient->setClientCallbacks(new MyClientCallback());
       pClient->connect(device);
       BLERemoteService *pRemoteService = pClient->getService(serviceUUID);
-      BLERemoteCharacteristic *pRemoteCharacteristic = pRemoteService->getCharacteristic(buzzerUUID);
+      BLERemoteCharacteristic *pRemoteCharacteristic = pRemoteService->getCharacteristic(outsideButtonUUID);
       notify_callback cb = [](BLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
         Serial.println("Doorbell button pressed");
         client.publish(DOORBELL_PRESSED, EMPTY_MESSAGE);
       };
       pRemoteCharacteristic->registerForNotify(cb);
-      client.subscribe(DOORBELL_BUZZER);
+      client.subscribe(DOORBELL_OPEN_DOOR);
       client.publish(DOORBELL_ACTIVE, EMPTY_MESSAGE);
       return;
     }

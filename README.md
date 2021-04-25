@@ -22,9 +22,8 @@ You will need to add a config.h header file to get things going:
 /* List of MQTT topics accepted by server */
 #define DOORBELL_INACTIVE "doorbell/inactive"
 #define DOORBELL_ACTIVE "doorbell/active"
-#define DOORBELL_BUZZER "doorbell/buzzer"
+#define DOORBELL_OPEN_DOOR "doorbell/open-door"
 #define DOORBELL_PRESSED "doorbell/pressed"
 #define DOORBELL_BATTERY "doorbell/battery"
 #define EMPTY_MESSAGE "test
 ```
-
