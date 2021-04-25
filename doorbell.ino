@@ -41,7 +41,7 @@ bool wifiConnect()
 
 String clientId()
 {
-  String clientId = "ESP32_CLIENT-";
+  String clientId = APP_NAME;
   clientId += String(random(0xffff), HEX);
   return clientId;
 }
@@ -62,7 +62,7 @@ bool mqttConnect()
   while (!client.connected() && attempts < MAX_RETIES)
   {
     client.setServer(MQTT_SERVER, MQTT_PORT).setCallback(callback);
-    Serial.print("MQTT Server -- attempting connection...");
+    Serial.print("MQTT -- attempting connection...");
     if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD))
     {
       Serial.println("Connected");
@@ -120,7 +120,7 @@ void setup()
   while (!Serial)
     delay(10);
 
-  Serial.println("Doorbel Client");
+  Serial.println(APP_NAME);
   Serial.println("------------------------------\n");
 
   if (wifiConnect() && mqttConnect())
