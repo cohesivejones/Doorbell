@@ -36,6 +36,10 @@ bool wifiConnect()
     Serial.print("connected, IP address: ");
     Serial.println(WiFi.localIP());
   }
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.println("WiFi -- failed to connect");
+  }
   return (WiFi.status() == WL_CONNECTED);
 }
 
@@ -65,7 +69,7 @@ bool mqttConnect()
     Serial.print("MQTT -- attempting connection...");
     if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD))
     {
-      Serial.println("Connected");
+      Serial.println("connected");
       return true;
     }
     else
@@ -75,6 +79,11 @@ bool mqttConnect()
       attempts++;
       delay(500);
     }
+  }
+
+  if (!client.connected())
+  {
+    Serial.println("MQTT Server -- failed to connect");
   }
   return client.connected();
 }
@@ -130,7 +139,6 @@ void setup()
   }
   else
   {
-    Serial.println("MQTT Server -- failed to connect");
     ESP.restart();
   }
 }
