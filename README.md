@@ -19,6 +19,11 @@ You will need to add a config.h header file to get things going:
 
 #define APP_NAME "DOORBELL-BRIDGE"
 
+#define OLED_RESET     4
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define SCREEN_ADDRESS 0x3D
+
 /* List of MQTT topics accepted by server */
 #define DOORBELL_INACTIVE "doorbell/inactive"
 #define DOORBELL_ACTIVE "doorbell/active"

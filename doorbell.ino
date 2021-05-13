@@ -2,6 +2,10 @@
 #include <BLEAdvertisedDevice.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include "config.h"
 
 /* Doorbell Service: 00001523-1212-EFDE-1523-785FEABCD123
@@ -17,6 +21,8 @@ BLEClient *pClient;
 WiFiClient espClient;
 PubSubClient client(espClient);
 BLEScan *pBLEScan;
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 const int MAX_RETIES = 5;
 int attempts = 0;
@@ -129,8 +135,24 @@ void setup()
   while (!Serial)
     delay(10);
 
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
+  {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;)
+      ; // Don't proceed, loop forever
+  }
+  display.clearDisplay();
+
   Serial.println(APP_NAME);
   Serial.println("------------------------------\n");
+
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println(F(APP_NAME));
+  display.println(F("---------------------\n"));
+  display.display();
 
   if (wifiConnect() && mqttConnect())
   {
