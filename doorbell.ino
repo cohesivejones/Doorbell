@@ -45,6 +45,13 @@ bool wifiConnect()
   if (WiFi.status() != WL_CONNECTED)
   {
     Serial.println("WiFi -- failed to connect");
+    display.println("WiFi -- failed to connect");
+    display.display();
+  }
+  else
+  {
+    display.println("WiFi -- connected");
+    display.display();
   }
   return (WiFi.status() == WL_CONNECTED);
 }
@@ -76,6 +83,8 @@ bool mqttConnect()
     if (client.connect(clientId().c_str(), MQTT_USER, MQTT_PASSWORD))
     {
       Serial.println("connected");
+      display.println("MQTT -- connected");
+      display.display();
       return true;
     }
     else
@@ -86,12 +95,10 @@ bool mqttConnect()
       delay(500);
     }
   }
-
-  if (!client.connected())
-  {
-    Serial.println("MQTT Server -- failed to connect");
-  }
-  return client.connected();
+  Serial.println("MQTT -- failed to connect");
+  display.println("MQTT -- failed to connect");
+  display.display();
+  return false;
 }
 
 class MyClientCallback : public BLEClientCallbacks
@@ -129,30 +136,30 @@ void StartScan()
   pBLEScan->start(5, false);
 }
 
-void setup()
+void setupDisplay()
 {
-  Serial.begin(9600);
-  while (!Serial)
-    delay(10);
-
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
   {
-    Serial.println(F("SSD1306 allocation failed"));
-    for (;;)
-      ; // Don't proceed, loop forever
+    ESP.restart();
   }
   display.clearDisplay();
-
-  Serial.println(APP_NAME);
-  Serial.println("------------------------------\n");
-
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 0);
   display.println(F(APP_NAME));
   display.println(F("---------------------\n"));
   display.display();
+}
+
+void setup()
+{
+  Serial.begin(9600);
+  while (!Serial)
+    delay(10);
+
+  Serial.println(APP_NAME);
+  Serial.println("------------------------------\n");
+  setupDisplay();
 
   if (wifiConnect() && mqttConnect())
   {
@@ -174,15 +181,21 @@ void loop()
       if (!pClient->isConnected())
       {
         Serial.println("Device disconnected -- Restarting");
+        display.println("BLE -- disconnected");
+        display.display();
         ESP.restart();
       }
       Serial.println("Device connected");
+      display.println("BLE -- connected");
+      display.display();
       client.loop();
       return;
     }
     if (device)
     {
       Serial.println("Device found -- Connecting");
+      display.println("BLE -- device found");
+      display.display();
       pClient = BLEDevice::createClient();
       pClient->setClientCallbacks(new MyClientCallback());
       pClient->connect(device);
@@ -198,10 +211,15 @@ void loop()
       return;
     }
     Serial.println("Device not found -- Restarting");
+    display.println("BLE -- not found");
+    display.display();
     ESP.restart();
   }
   catch (int e)
   {
+    display.clearDisplay();
+    display.println("Error -- restarting");
+    display.display();
     ESP.restart();
   }
 }
