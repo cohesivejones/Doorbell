@@ -185,9 +185,6 @@ void loop()
         display.display();
         ESP.restart();
       }
-      Serial.println("Device connected");
-      display.println("BLE -- connected");
-      display.display();
       client.loop();
       return;
     }
