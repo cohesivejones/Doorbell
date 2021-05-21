@@ -32,3 +32,5 @@ You will need to add a config.h header file to get things going:
 #define DOORBELL_BATTERY "doorbell/battery"
 #define EMPTY_MESSAGE "test
 ```
+
+![Doorbell bridge with display](https://user-images.githubusercontent.com/2830208/119149615-afb9ba00-ba1b-11eb-82f4-8a834103720d.jpg)
