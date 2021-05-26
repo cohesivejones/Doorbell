@@ -70,6 +70,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     BLERemoteService *pRemoteService = pClient->getService(serviceUUID);
     BLERemoteCharacteristic *pRemoteCharacteristic = pRemoteService->getCharacteristic(openDoorUUID);
     pRemoteCharacteristic->writeValue(1);
+    client.publish(DOORBELL_OPEN_DOOR_SUCCESS, EMPTY_MESSAGE);
   }
 }
 

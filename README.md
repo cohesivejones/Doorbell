@@ -28,6 +28,7 @@ You will need to add a config.h header file to get things going:
 #define DOORBELL_INACTIVE "doorbell/inactive"
 #define DOORBELL_ACTIVE "doorbell/active"
 #define DOORBELL_OPEN_DOOR "doorbell/open-door"
+#define DOORBELL_OPEN_DOOR_SUCCESS "doorbell/open-door-success"
 #define DOORBELL_PRESSED "doorbell/pressed"
 #define DOORBELL_BATTERY "doorbell/battery"
 #define EMPTY_MESSAGE "test
