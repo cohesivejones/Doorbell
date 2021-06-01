@@ -67,10 +67,17 @@ void callback(char *topic, byte *payload, unsigned int length)
 {
   if (pClient)
   {
-    BLERemoteService *pRemoteService = pClient->getService(serviceUUID);
-    BLERemoteCharacteristic *pRemoteCharacteristic = pRemoteService->getCharacteristic(openDoorUUID);
-    pRemoteCharacteristic->writeValue(1);
-    client.publish(DOORBELL_OPEN_DOOR_SUCCESS, EMPTY_MESSAGE);
+    if (strcmp(topic, DOORBELL_OPEN_DOOR) == 0)
+    {
+      BLERemoteService *pRemoteService = pClient->getService(serviceUUID);
+      BLERemoteCharacteristic *pRemoteCharacteristic = pRemoteService->getCharacteristic(openDoorUUID);
+      pRemoteCharacteristic->writeValue(1);
+      client.publish(DOORBELL_OPEN_DOOR_SUCCESS, EMPTY_MESSAGE);
+    }
+    else
+    {
+      client.publish(DOORBELL_ACTIVE, EMPTY_MESSAGE);
+    }
   }
 }
 
@@ -164,6 +171,8 @@ void setup()
 
   if (wifiConnect() && mqttConnect())
   {
+    client.subscribe(DOORBELL_OPEN_DOOR);
+    client.subscribe(DOORBELL_INACTIVE);
     client.publish(DOORBELL_INACTIVE, EMPTY_MESSAGE);
     StartScan();
   }
@@ -172,52 +181,59 @@ void setup()
     ESP.restart();
   }
 }
+void bleConnect()
+{
+  Serial.println("Device found -- Connecting");
+  display.println("BLE -- device found");
+  display.display();
+  pClient = BLEDevice::createClient();
+  pClient->setClientCallbacks(new MyClientCallback());
+  pClient->connect(device);
+  BLERemoteService *pRemoteService = pClient->getService(serviceUUID);
+  BLERemoteCharacteristic *pRemoteCharacteristic = pRemoteService->getCharacteristic(outsideButtonUUID);
+  notify_callback cb = [](BLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify)
+  {
+    Serial.println("Doorbell button pressed");
+    client.publish(DOORBELL_PRESSED, EMPTY_MESSAGE);
+  };
+  pRemoteCharacteristic->registerForNotify(cb);
+  client.publish(DOORBELL_ACTIVE, EMPTY_MESSAGE);
+}
 
 void loop()
 {
   try
   {
-    if (device && pClient)
+    if (device && client.connected())
     {
-      if (!pClient->isConnected())
+      if (!pClient)
+      {
+        bleConnect();
+      }
+      else if (pClient->isConnected() == false)
       {
         Serial.println("Device disconnected -- Restarting");
         display.println("BLE -- disconnected");
         display.display();
         ESP.restart();
       }
-      client.loop();
-      return;
+      else
+      {
+        client.loop();
+      }
     }
-    if (device)
+    else
     {
-      Serial.println("Device found -- Connecting");
-      display.println("BLE -- device found");
+      Serial.println("Device not found -- Restarting");
+      display.println("BLE -- not found");
       display.display();
-      pClient = BLEDevice::createClient();
-      pClient->setClientCallbacks(new MyClientCallback());
-      pClient->connect(device);
-      BLERemoteService *pRemoteService = pClient->getService(serviceUUID);
-      BLERemoteCharacteristic *pRemoteCharacteristic = pRemoteService->getCharacteristic(outsideButtonUUID);
-      notify_callback cb = [](BLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
-        Serial.println("Doorbell button pressed");
-        client.publish(DOORBELL_PRESSED, EMPTY_MESSAGE);
-      };
-      pRemoteCharacteristic->registerForNotify(cb);
-      client.subscribe(DOORBELL_OPEN_DOOR);
-      client.publish(DOORBELL_ACTIVE, EMPTY_MESSAGE);
-      return;
+      ESP.restart();
     }
-    Serial.println("Device not found -- Restarting");
-    display.println("BLE -- not found");
-    display.display();
-    ESP.restart();
   }
   catch (int e)
   {
     display.clearDisplay();
     display.println("Error -- restarting");
     display.display();
-    ESP.restart();
   }
 }
